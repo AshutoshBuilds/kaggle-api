@@ -1,21 +1,5 @@
 #!/usr/bin/python
 #
-# Copyright 2024 Kaggle Inc
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-#!/usr/bin/python
-#
 # Copyright 2019 Kaggle Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,11 +67,7 @@ def main():
   try:
     out = args.func(**command_args)
   except ApiException as e:
-    msg = '{} - {}'.format(str(e.status), e.reason)
-    body = __parse_body(e.body)
-    if body and 'message' in body:
-      msg += ' - {}'.format(body['message'])
-    print(msg)
+    print(e)
     out = None
     error = True
   except ValueError as e:
@@ -254,8 +234,6 @@ def parse_competitions(subparsers):
       help=Help.command_competitions_submit)
   parser_competitions_submit_optional = parser_competitions_submit._action_groups.pop(
   )
-  parser_competitions_submit_required = parser_competitions_submit.add_argument_group(
-      'required arguments')
   parser_competitions_submit_optional.add_argument(
       'competition', nargs='?', default=None, help=Help.param_competition)
   parser_competitions_submit_optional.add_argument(
@@ -264,14 +242,18 @@ def parse_competitions(subparsers):
       dest='competition_opt',
       required=False,
       help=argparse.SUPPRESS)
-  parser_competitions_submit_required.add_argument(
-      '-f', '--file', dest='file_name', required=True, help=Help.param_upfile)
-  parser_competitions_submit_required.add_argument(
+  parser_competitions_submit_optional.add_argument(
+      '-f', '--file', dest='file_name', help=Help.param_upfile)
+  parser_competitions_submit_optional.add_argument(
+      '-k', '--kernel', dest='kernel', help=Help.param_code_kernel)
+  parser_competitions_submit_optional.add_argument(
       '-m',
       '--message',
       dest='message',
       required=True,
       help=Help.param_competition_message)
+  parser_competitions_submit_optional.add_argument(
+      '-v', '--version', dest='version', help=Help.param_code_version)
   parser_competitions_submit_optional.add_argument(
       '-q', '--quiet', dest='quiet', action='store_true', help=Help.param_quiet)
   parser_competitions_submit._action_groups.append(
@@ -767,6 +749,10 @@ def parse_kernels(subparsers):
       dest='folder',
       required=False,
       help=Help.param_kernel_upfile)
+  parser_kernels_push_optional.add_argument(
+      '-t',
+      '--timeout',
+      dest='timeout')
   parser_kernels_push._action_groups.append(parser_kernels_push_optional)
   parser_kernels_push.set_defaults(func=api.kernels_push_cli)
 
@@ -1436,7 +1422,9 @@ class Help(object):
   param_delete_old_version = 'Delete old versions of this dataset'
   param_force = ('Skip check whether local version of file is up to date, force'
                  ' file download')
-  param_upfile = 'File for upload (full path)'
+  param_upfile = 'File for upload (full path), or the name of the output file produced by a kernel (for code competitions)'
+  param_code_kernel = 'Name of kernel (notebook) to submit to a code competition'
+  param_code_version = 'Version of kernel to submit to a code competition, e.g. "Version 1"'
   param_csv = 'Print results in CSV format (if not set print in table format)'
   param_page = 'Page number for results paging. Page size is 20 by default'
   # NOTE: Default and max page size are set by the mid-tier code.

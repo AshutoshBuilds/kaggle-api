@@ -1,6 +1,6 @@
 from kagglesdk.common.types.file_download import FileDownload
 from kagglesdk.common.types.http_redirect import HttpRedirect
-from kagglesdk.competitions.types.competition_api_service import ApiCreateSubmissionRequest, ApiCreateSubmissionResponse, ApiDownloadDataFileRequest, ApiDownloadDataFilesRequest, ApiDownloadLeaderboardRequest, ApiGetLeaderboardRequest, ApiGetLeaderboardResponse, ApiListCompetitionsRequest, ApiListCompetitionsResponse, ApiListDataFilesRequest, ApiListDataFilesResponse, ApiListSubmissionsRequest, ApiListSubmissionsResponse, ApiStartSubmissionUploadRequest, ApiStartSubmissionUploadResponse
+from kagglesdk.competitions.types.competition_api_service import ApiCreateCodeSubmissionRequest, ApiCreateCodeSubmissionResponse, ApiCreateSubmissionRequest, ApiCreateSubmissionResponse, ApiDownloadDataFileRequest, ApiDownloadDataFilesRequest, ApiDownloadLeaderboardRequest, ApiGetLeaderboardRequest, ApiGetLeaderboardResponse, ApiGetSubmissionRequest, ApiListCompetitionsRequest, ApiListCompetitionsResponse, ApiListDataFilesRequest, ApiListDataFilesResponse, ApiListSubmissionsRequest, ApiListSubmissionsResponse, ApiStartSubmissionUploadRequest, ApiStartSubmissionUploadResponse, ApiSubmission
 from kagglesdk.kaggle_http_client import KaggleHttpClient
 
 class CompetitionApiClient(object):
@@ -79,6 +79,30 @@ class CompetitionApiClient(object):
       request = ApiCreateSubmissionRequest()
 
     return self._client.call("competitions.CompetitionApiService", "ApiCreateSubmission", request, ApiCreateSubmissionResponse)
+
+  def create_code_submission(self, request: ApiCreateCodeSubmissionRequest = None) -> ApiCreateCodeSubmissionResponse:
+    r"""
+    Args:
+      request (ApiCreateCodeSubmissionRequest):
+        The request object; initialized to empty instance if not specified.
+    """
+
+    if request is None:
+      request = ApiCreateCodeSubmissionRequest()
+
+    return self._client.call("competitions.CompetitionApiService", "ApiCreateCodeSubmission", request, ApiCreateCodeSubmissionResponse)
+
+  def get_submission(self, request: ApiGetSubmissionRequest = None) -> ApiSubmission:
+    r"""
+    Args:
+      request (ApiGetSubmissionRequest):
+        The request object; initialized to empty instance if not specified.
+    """
+
+    if request is None:
+      request = ApiGetSubmissionRequest()
+
+    return self._client.call("competitions.CompetitionApiService", "ApiGetSubmission", request, ApiSubmission)
 
   def start_submission_upload(self, request: ApiStartSubmissionUploadRequest = None) -> ApiStartSubmissionUploadResponse:
     r"""

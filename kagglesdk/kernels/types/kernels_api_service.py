@@ -73,7 +73,6 @@ class ApiDownloadKernelOutputRequest(KaggleObject):
       raise TypeError('version_number must be of type int')
     self._version_number = version_number
 
-
   def endpoint(self):
     if self.file_path:
       path = '/api/v1/kernels/output/download/{owner_slug}/{kernel_slug}/{file_path}'
@@ -84,6 +83,39 @@ class ApiDownloadKernelOutputRequest(KaggleObject):
   @staticmethod
   def endpoint_path():
     return '/api/v1/kernels/output/download/{owner_slug}/{kernel_slug}'
+
+
+class ApiDownloadKernelOutputZipRequest(KaggleObject):
+  r"""
+  Attributes:
+    kernel_session_id (int)
+  """
+
+  def __init__(self):
+    self._kernel_session_id = 0
+    self._freeze()
+
+  @property
+  def kernel_session_id(self) -> int:
+    return self._kernel_session_id
+
+  @kernel_session_id.setter
+  def kernel_session_id(self, kernel_session_id: int):
+    if kernel_session_id is None:
+      del self.kernel_session_id
+      return
+    if not isinstance(kernel_session_id, int):
+      raise TypeError('kernel_session_id must be of type int')
+    self._kernel_session_id = kernel_session_id
+
+  def endpoint(self):
+    path = '/api/v1/kernels/output/download_zip/{kernel_session_id}'
+    return path.format_map(self.to_field_map(self))
+
+  @staticmethod
+  def endpoint_path():
+    return '/api/v1/kernels/output/download_zip/{kernel_session_id}'
+
 
 class ApiGetKernelRequest(KaggleObject):
   r"""
@@ -123,10 +155,10 @@ class ApiGetKernelRequest(KaggleObject):
       raise TypeError('kernel_slug must be of type str')
     self._kernel_slug = kernel_slug
 
-
   def endpoint(self):
     path = '/api/v1/kernels/pull'
     return path.format_map(self.to_field_map(self))
+
 
 class ApiGetKernelResponse(KaggleObject):
   r"""
@@ -205,10 +237,10 @@ class ApiGetKernelSessionStatusRequest(KaggleObject):
       raise TypeError('kernel_slug must be of type str')
     self._kernel_slug = kernel_slug
 
-
   def endpoint(self):
     path = '/api/v1/kernels/status'
     return path.format_map(self.to_field_map(self))
+
 
 class ApiGetKernelSessionStatusResponse(KaggleObject):
   r"""
@@ -247,6 +279,10 @@ class ApiGetKernelSessionStatusResponse(KaggleObject):
     if not isinstance(failure_message, str):
       raise TypeError('failure_message must be of type str')
     self._failure_message = failure_message
+
+  @property
+  def failureMessage(self):
+    return self.failure_message
 
 
 class ApiKernelBlob(KaggleObject):
@@ -690,10 +726,10 @@ class ApiListKernelFilesRequest(KaggleObject):
       raise TypeError('page_token must be of type str')
     self._page_token = page_token
 
-
   def endpoint(self):
     path = '/api/v1/kernels/files'
     return path.format_map(self.to_field_map(self))
+
 
 class ApiListKernelFilesResponse(KaggleObject):
   r"""
@@ -734,6 +770,10 @@ class ApiListKernelFilesResponse(KaggleObject):
     if not isinstance(next_page_token, str):
       raise TypeError('next_page_token must be of type str')
     self._next_page_token = next_page_token
+
+  @property
+  def nextPageToken(self):
+    return self.next_page_token
 
 
 class ApiListKernelSessionOutputRequest(KaggleObject):
@@ -804,10 +844,10 @@ class ApiListKernelSessionOutputRequest(KaggleObject):
       raise TypeError('page_token must be of type str')
     self._page_token = page_token
 
-
   def endpoint(self):
     path = '/api/v1/kernels/output'
     return path.format_map(self.to_field_map(self))
+
 
 class ApiListKernelSessionOutputResponse(KaggleObject):
   r"""
@@ -863,6 +903,10 @@ class ApiListKernelSessionOutputResponse(KaggleObject):
     if not isinstance(next_page_token, str):
       raise TypeError('next_page_token must be of type str')
     self._next_page_token = next_page_token
+
+  @property
+  def nextPageToken(self):
+    return self.next_page_token
 
 
 class ApiListKernelsRequest(KaggleObject):
@@ -1089,10 +1133,10 @@ class ApiListKernelsRequest(KaggleObject):
       raise TypeError('page_size must be of type int')
     self._page_size = page_size
 
-
   def endpoint(self):
     path = '/api/v1/kernels/list'
     return path.format_map(self.to_field_map(self))
+
 
 class ApiListKernelsResponse(KaggleObject):
   r"""
@@ -1119,10 +1163,10 @@ class ApiListKernelsResponse(KaggleObject):
       raise TypeError('kernels must contain only items of type ApiKernelMetadata')
     self._kernels = kernels
 
-
   @classmethod
   def prepare_from(cls, http_response):
     return cls.from_dict({'kernels': json.loads(http_response.text)})
+
 
 class ApiSaveKernelRequest(KaggleObject):
   r"""
@@ -1172,6 +1216,9 @@ class ApiSaveKernelRequest(KaggleObject):
       `{username}/{model-slug}/{framework}/{variation-slug}`
       Or versioned:
       `{username}/{model-slug}/{framework}/{variation-slug}/{version-number}`
+    session_timeout_seconds (int)
+      If specified, terminate the kernel session after this many seconds of
+      runtime, which must be lower than the global maximum.
   """
 
   def __init__(self):
@@ -1191,6 +1238,7 @@ class ApiSaveKernelRequest(KaggleObject):
     self._enable_internet = None
     self._docker_image_pinning_type = None
     self._model_data_sources = []
+    self._session_timeout_seconds = None
     self._freeze()
 
   @property
@@ -1452,6 +1500,22 @@ class ApiSaveKernelRequest(KaggleObject):
       raise TypeError('model_data_sources must contain only items of type str')
     self._model_data_sources = model_data_sources
 
+  @property
+  def session_timeout_seconds(self) -> int:
+    r"""
+    If specified, terminate the kernel session after this many seconds of
+    runtime, which must be lower than the global maximum.
+    """
+    return self._session_timeout_seconds or 0
+
+  @session_timeout_seconds.setter
+  def session_timeout_seconds(self, session_timeout_seconds: int):
+    if session_timeout_seconds is None:
+      del self.session_timeout_seconds
+      return
+    if not isinstance(session_timeout_seconds, int):
+      raise TypeError('session_timeout_seconds must be of type int')
+    self._session_timeout_seconds = session_timeout_seconds
 
   def endpoint(self):
     path = '/api/v1/kernels/push'
@@ -1465,6 +1529,7 @@ class ApiSaveKernelRequest(KaggleObject):
   @staticmethod
   def body_fields():
     return '*'
+
 
 class ApiSaveKernelResponse(KaggleObject):
   r"""
@@ -1619,6 +1684,30 @@ class ApiSaveKernelResponse(KaggleObject):
       raise TypeError('invalid_model_sources must contain only items of type str')
     self._invalid_model_sources = invalid_model_sources
 
+  @property
+  def versionNumber(self):
+    return self.version_number
+
+  @property
+  def invalidTags(self):
+    return self.invalid_tags
+
+  @property
+  def invalidDatasetSources(self):
+    return self.invalid_dataset_sources
+
+  @property
+  def invalidCompetitionSources(self):
+    return self.invalid_competition_sources
+
+  @property
+  def invalidKernelSources(self):
+    return self.invalid_kernel_sources
+
+  @property
+  def invalidModelSources(self):
+    return self.invalid_model_sources
+
 
 class ApiKernelSessionOutputFile(KaggleObject):
   r"""
@@ -1718,6 +1807,10 @@ ApiDownloadKernelOutputRequest._fields = [
   FieldMetadata("kernelSlug", "kernel_slug", "_kernel_slug", str, "", PredefinedSerializer()),
   FieldMetadata("filePath", "file_path", "_file_path", str, None, PredefinedSerializer(), optional=True),
   FieldMetadata("versionNumber", "version_number", "_version_number", int, None, PredefinedSerializer(), optional=True),
+]
+
+ApiDownloadKernelOutputZipRequest._fields = [
+  FieldMetadata("kernelSessionId", "kernel_session_id", "_kernel_session_id", int, 0, PredefinedSerializer()),
 ]
 
 ApiGetKernelRequest._fields = [
@@ -1830,6 +1923,7 @@ ApiSaveKernelRequest._fields = [
   FieldMetadata("enableInternet", "enable_internet", "_enable_internet", bool, None, PredefinedSerializer(), optional=True),
   FieldMetadata("dockerImagePinningType", "docker_image_pinning_type", "_docker_image_pinning_type", str, None, PredefinedSerializer(), optional=True),
   FieldMetadata("modelDataSources", "model_data_sources", "_model_data_sources", str, [], ListSerializer(PredefinedSerializer())),
+  FieldMetadata("sessionTimeoutSeconds", "session_timeout_seconds", "_session_timeout_seconds", int, None, PredefinedSerializer(), optional=True),
 ]
 
 ApiSaveKernelResponse._fields = [

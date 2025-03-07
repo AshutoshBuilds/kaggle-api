@@ -227,6 +227,7 @@ class TestKaggleApi(unittest.TestCase):
     try:
       kernels = api.kernels_list(sort_by='dateCreated', user='stevemessick', language='python')
       self.assertGreater(len(kernels), 0)
+      api.kernels_list_cli(user='stevemessick', csv_display=True)
     except ApiException as e:
       self.fail(f"kernels_list failed: {e}")
 
@@ -346,7 +347,10 @@ class TestKaggleApi(unittest.TestCase):
 
   def test_competition_b_submit(self):
     try:
-      api.competition_submit(up_file, description, competition)
+      self.skip_submissions = False
+      result = api.competition_submit_cli(up_file, description, competition)
+      if not result or not result.startswith('Successfully submitted'):
+        self.fail(f'competition_submit failed: {result}')
     except HTTPError:
       # Handle submission limit reached gracefully (potentially skip the test)
       print('Competition submission limit reached for the day')
@@ -482,6 +486,7 @@ class TestKaggleApi(unittest.TestCase):
           self.assertTrue(hasattr(self.dataset_file, api.camel_to_snake(f)))
           for f in api.dataset_file_fields
       ]
+      api.dataset_list_files_cli(self.dataset)
     except ApiException as e:
       self.fail(f"dataset_list_files failed: {e}")
 
@@ -541,8 +546,11 @@ class TestKaggleApi(unittest.TestCase):
       new_dataset = api.dataset_create_new(dataset_directory)
       self.assertIsNotNone(new_dataset)
       if new_dataset.error is not None:
-        print(new_dataset.error)  # This is likely to happen, and that's OK.
-        # self.skip_create_version = True
+        if 'already in use' in new_dataset.error:
+          print(new_dataset.error)  # This is likely to happen, and that's OK.
+          self.skip_create_version = True
+        else:
+          self.fail(f"dataset_create_new failed: {new_dataset.error}")
     except ApiException as e:
       self.fail(f"dataset_create_new failed: {e}")
 
@@ -783,7 +791,7 @@ class TestKaggleApi(unittest.TestCase):
       self.assertIsNotNone(inst_update_resp)
       if len(inst_update_resp.error):
         print(inst_update_resp.error)
-      self.assertEquals(len(inst_update_resp.error), 0)
+      self.assertEqual(len(inst_update_resp.error), 0)
     except ApiException as e:
       self.fail(f"model_instance_delete failed: {e}")
 

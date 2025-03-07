@@ -14,22 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/python
-#
-# Copyright 2024 Kaggle Inc
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 # coding=utf-8
 from __future__ import print_function
 
@@ -50,7 +34,8 @@ import requests
 import urllib3.exceptions as urllib3_exceptions
 from requests import RequestException
 
-from kaggle.models.kaggle_models_extended import ResumableUploadResult, File
+from kaggle.models.kaggle_models_extended import ResumableUploadResult, File, \
+  Kernel
 
 from requests.adapters import HTTPAdapter
 from slugify import slugify
@@ -70,14 +55,15 @@ from kagglesdk.datasets.types.dataset_api_service import ApiListDatasetsRequest,
   ApiCreateDatasetRequest, ApiCreateDatasetVersionRequestBody, \
   ApiCreateDatasetVersionByIdRequest, ApiCreateDatasetVersionRequest, \
   ApiDatasetNewFile, ApiUpdateDatasetMetadataRequest, \
-  ApiGetDatasetMetadataRequest
+  ApiGetDatasetMetadataRequest, ApiListDatasetFilesResponse, ApiDatasetFile
 from kagglesdk.datasets.types.dataset_enums import DatasetSelectionGroup, \
   DatasetSortBy, DatasetFileTypeGroup, DatasetLicenseGroup
 from kagglesdk.datasets.types.dataset_types import DatasetSettings, \
   SettingsLicense, DatasetCollaborator
 from kagglesdk.kernels.types.kernels_api_service import ApiListKernelsRequest, \
   ApiListKernelFilesRequest, ApiSaveKernelRequest, ApiGetKernelRequest, \
-  ApiListKernelSessionOutputRequest, ApiGetKernelSessionStatusRequest
+  ApiListKernelSessionOutputRequest, ApiGetKernelSessionStatusRequest, \
+  ApiSaveKernelResponse
 from kagglesdk.kernels.types.kernels_enums import KernelsListSortType, \
   KernelsListViewType
 from kagglesdk.models.types.model_api_service import ApiListModelsRequest, \
@@ -267,7 +253,7 @@ class ResumableFileUpload(object):
 
 
 class KaggleApi:
-  __version__ = '1.6.17'
+  __version__ = '1.7.3b1'
 
   CONFIG_NAME_PROXY = 'proxy'
   CONFIG_NAME_COMPETITION = 'competition'
@@ -306,7 +292,7 @@ class KaggleApi:
 
   args = {}  # DEBUG Add --local to use localhost
   if os.environ.get('KAGGLE_API_ENVIRONMENT') == 'LOCALHOST':
-    args = {'--local'}
+    args = {'--verbose','--local'}
 
   # Kernels valid types
   valid_push_kernel_types = ['script', 'notebook']
@@ -716,7 +702,16 @@ class KaggleApi:
       return enum_class[item]
     except KeyError:
       prefix = self.camel_to_snake(enum_class.__name__).upper()
-      return enum_class[f'{prefix}_{self.camel_to_snake(item_name).upper()}']
+      full_name = f'{prefix}_{self.camel_to_snake(item_name).upper()}'
+      try:
+        return enum_class[full_name]
+      except KeyError:
+        # Handle PY_TORCH vs PYTORCH, etc.
+        full_name = full_name.replace('_', '')
+        for item in enum_class.keys:
+          if item.replace('_', '') == full_name:
+            return enum_class[item]
+          raise
 
   def short_enum_name(self, value):
     full_name = str(value)
@@ -808,8 +803,47 @@ class KaggleApi:
     else:
       print('No competitions found')
 
+  def competition_submit_code(self, file_name, message, competition, kernel=None, kernel_version=None, quiet=False):
+    """ Submit to a code competition.
+
+            Parameters
+            ==========
+            file_name: the name of  the output file created by the kernel (not used for packages)
+            message: the submission description
+            competition: the competition name; if not given use the 'competition' config value
+            kernel: the <owner>/<notebook> of the notebook to use for a code competition
+            kernel_version: the version number, returned by 'kaggle kernels push ...'
+            quiet: suppress verbose output (default is False)
+        """
+    if competition is None:
+      competition = self.get_config_value(self.CONFIG_NAME_COMPETITION)
+      if competition is not None and not quiet:
+        print('Using competition: ' + competition)
+    if competition is None:
+      raise ValueError('No competition specified')
+
+    if kernel is None:
+      raise ValueError('No kernel specified')
+    else:
+      with self.build_kaggle_client() as kaggle:
+        items = kernel.split('/')
+        if len(items) != 2:
+          raise ValueError('The kernel must be specified as <owner>/<notebook>')
+        submit_request = ApiCreateCodeSubmissionRequest()
+        submit_request.file_name = file_name
+        submit_request.competition_name = competition
+        submit_request._kernel_owner = items[0]
+        submit_request.kernel_slug = items[1]
+        if kernel_version:
+          submit_request.kernel_version = int(kernel_version)
+        if message:
+          submit_request.submission_description = message
+        submit_response = kaggle.competitions.competition_api_client.create_code_submission(
+            submit_request)
+        return submit_response
+
   def competition_submit(self, file_name, message, competition, quiet=False):
-    """ Submit a competition.
+    """ Submit to a competition.
 
             Parameters
             ==========
@@ -826,6 +860,8 @@ class KaggleApi:
     if competition is None:
       raise ValueError('No competition specified')
     else:
+      if file_name is None:
+        raise ValueError('No file specified')
       with self.build_kaggle_client() as kaggle:
         request = ApiStartSubmissionUploadRequest()
         request.competition_name = competition
@@ -844,15 +880,18 @@ class KaggleApi:
         submit_request = ApiCreateSubmissionRequest()
         submit_request.competition_name = competition
         submit_request.blob_file_tokens = response.token
-        submit_request.submission_description = message
+        if message:
+          submit_request.submission_description = message
         submit_response = kaggle.competitions.competition_api_client.create_submission(
             submit_request)
         return submit_response
 
   def competition_submit_cli(self,
-                             file_name,
-                             message,
-                             competition,
+                             file_name=None,
+                             message=None,
+                             competition=None,
+                             kernel=None,
+                             version=None,
                              competition_opt=None,
                              quiet=False):
     """ Submit a competition using the client. Arguments are same as for
@@ -863,12 +902,20 @@ class KaggleApi:
             file_name: the competition metadata file
             message: the submission description
             competition: the competition name; if not given use the 'competition' config value
+            kernel: the name of the kernel to submit to a code competition
+            version: the version of the kernel to submit to a code competition, e.g. '1'
             quiet: suppress verbose output (default is False)
             competition_opt: an alternative competition option provided by cli
         """
+    if kernel and not version or version and not kernel:
+      raise ValueError('Code competition submissions require both the output file name and the version label')
     competition = competition or competition_opt
     try:
-      submit_result = self.competition_submit(file_name, message, competition,
+      if kernel:
+        submit_result = self.competition_submit_code(file_name, message, competition,
+                                                     kernel, version, quiet)
+      else:
+        submit_result = self.competition_submit(file_name, message, competition,
                                               quiet)
     except RequestException as e:
       if e.response and e.response.status_code == 404:
@@ -878,7 +925,7 @@ class KaggleApi:
         return None
       else:
         raise e
-    return submit_result
+    return submit_result.message
 
   def competition_submissions(self,
                               competition,
@@ -1474,6 +1521,7 @@ class KaggleApi:
         if next_page_token:
           print('Next Page Token = {}'.format(next_page_token))
         fields = ['name', 'size', 'creationDate']
+        ApiDatasetFile.size = ApiDatasetFile.total_bytes
         if csv_display:
           self.print_csv(result.files, fields)
         else:
@@ -2384,7 +2432,7 @@ class KaggleApi:
     meta_file = self.kernels_initialize(folder)
     print('Kernel metadata template written to: ' + meta_file)
 
-  def kernels_push(self, folder):
+  def kernels_push(self, folder, timeout=None) -> ApiSaveKernelResponse:
     """ Read the metadata file and kernel files from a notebook, validate
             both, and use the Kernel API to push to Kaggle if all is valid.
             Parameters
@@ -2480,7 +2528,7 @@ class KaggleApi:
           # but the server expects just one
           if 'source' in cell and isinstance(cell['source'], list):
             cell['source'] = ''.join(cell['source'])
-      script_body = json.dumps(json_body).replace("'", "\\'")
+      script_body = json.dumps(json_body)
 
     with self.build_kaggle_client() as kaggle:
       request = ApiSaveKernelRequest()
@@ -2502,16 +2550,18 @@ class KaggleApi:
       request.model_data_sources = model_sources
       request.category_ids = self.get_or_default(meta_data, 'keywords', [])
       request.docker_image_pinning_type = docker_pinning_type
+      if timeout:
+        request.session_timeout_seconds = int(timeout)
       return kaggle.kernels.kernels_api_client.save_kernel(request)
 
-  def kernels_push_cli(self, folder):
+  def kernels_push_cli(self, folder, timeout):
     """ Client wrapper for kernels_push.
         Parameters
             ==========
             folder: the path of the folder
         """
     folder = folder or os.getcwd()
-    result = self.kernels_push(folder)
+    result = self.kernels_push(folder, timeout)
 
     if result is None:
       print('Kernel push error: see previous output')
@@ -4650,3 +4700,21 @@ class FileList(object):
 
   def __repr__(self):
     return ''
+
+# This defines print_attributes(), which is very handy for inspecting
+# objects returned by the Kaggle API.
+
+from pprint import pprint
+from inspect import getmembers
+from types import FunctionType
+
+def attributes(obj):
+  disallowed_names = {
+    name for name, value in getmembers(type(obj))
+    if isinstance(value, FunctionType)}
+  return {
+    name: getattr(obj, name) for name in dir(obj)
+    if name[0] != '_' and name not in disallowed_names and hasattr(obj, name)}
+
+def print_attributes(obj):
+  pprint(attributes(obj))

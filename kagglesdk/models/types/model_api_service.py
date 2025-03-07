@@ -2,7 +2,7 @@ from datetime import datetime
 from google.protobuf.field_mask_pb2 import FieldMask
 from kagglesdk.datasets.types.dataset_api_service import ApiCategory, ApiDatasetNewFile, ApiUploadDirectoryInfo
 from kagglesdk.kaggle_object import *
-from kagglesdk.models.types.model_enums import ListModelsOrderBy, ModelFramework, ModelInstanceType
+from kagglesdk.models.types.model_enums import GatingAgreementRequestsExpiryStatus, GatingAgreementRequestsReviewStatus, ListModelsOrderBy, ModelFramework, ModelInstanceType
 from kagglesdk.models.types.model_types import BaseModelInstanceInformation, ModelLink
 from typing import Optional, List
 
@@ -59,7 +59,6 @@ class ApiCreateModelInstanceRequest(KaggleObject):
       raise TypeError('body must be of type ApiCreateModelInstanceRequestBody')
     self._body = body
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/create/instance'
     return path.format_map(self.to_field_map(self))
@@ -72,6 +71,7 @@ class ApiCreateModelInstanceRequest(KaggleObject):
   @staticmethod
   def body_fields():
     return 'body'
+
 
 class ApiCreateModelInstanceRequestBody(KaggleObject):
   r"""
@@ -88,6 +88,7 @@ class ApiCreateModelInstanceRequestBody(KaggleObject):
     model_instance_type (ModelInstanceType)
     base_model_instance (str)
     external_base_model_url (str)
+    sigstore (bool)
   """
 
   def __init__(self):
@@ -103,6 +104,7 @@ class ApiCreateModelInstanceRequestBody(KaggleObject):
     self._model_instance_type = None
     self._base_model_instance = None
     self._external_base_model_url = None
+    self._sigstore = None
     self._freeze()
 
   @property
@@ -267,6 +269,19 @@ class ApiCreateModelInstanceRequestBody(KaggleObject):
       raise TypeError('external_base_model_url must be of type str')
     self._external_base_model_url = external_base_model_url
 
+  @property
+  def sigstore(self) -> bool:
+    return self._sigstore or False
+
+  @sigstore.setter
+  def sigstore(self, sigstore: bool):
+    if sigstore is None:
+      del self.sigstore
+      return
+    if not isinstance(sigstore, bool):
+      raise TypeError('sigstore must be of type bool')
+    self._sigstore = sigstore
+
 
 class ApiCreateModelInstanceVersionRequest(KaggleObject):
   r"""
@@ -351,7 +366,6 @@ class ApiCreateModelInstanceVersionRequest(KaggleObject):
       raise TypeError('body must be of type ApiCreateModelInstanceVersionRequestBody')
     self._body = body
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/create/version'
     return path.format_map(self.to_field_map(self))
@@ -365,18 +379,21 @@ class ApiCreateModelInstanceVersionRequest(KaggleObject):
   def body_fields():
     return 'body'
 
+
 class ApiCreateModelInstanceVersionRequestBody(KaggleObject):
   r"""
   Attributes:
     version_notes (str)
     files (ApiDatasetNewFile)
     directories (ApiUploadDirectoryInfo)
+    sigstore (bool)
   """
 
   def __init__(self):
     self._version_notes = None
     self._files = []
     self._directories = []
+    self._sigstore = None
     self._freeze()
 
   @property
@@ -421,6 +438,19 @@ class ApiCreateModelInstanceVersionRequestBody(KaggleObject):
     if not all([isinstance(t, ApiUploadDirectoryInfo) for t in directories]):
       raise TypeError('directories must contain only items of type ApiUploadDirectoryInfo')
     self._directories = directories
+
+  @property
+  def sigstore(self) -> bool:
+    return self._sigstore or False
+
+  @sigstore.setter
+  def sigstore(self, sigstore: bool):
+    if sigstore is None:
+      del self.sigstore
+      return
+    if not isinstance(sigstore, bool):
+      raise TypeError('sigstore must be of type bool')
+    self._sigstore = sigstore
 
 
 class ApiCreateModelRequest(KaggleObject):
@@ -551,7 +581,6 @@ class ApiCreateModelRequest(KaggleObject):
       raise TypeError('provenance_sources must be of type str')
     self._provenance_sources = provenance_sources
 
-
   def endpoint(self):
     path = '/api/v1/models/create/new'
     return path.format_map(self.to_field_map(self))
@@ -564,6 +593,7 @@ class ApiCreateModelRequest(KaggleObject):
   @staticmethod
   def body_fields():
     return '*'
+
 
 class ApiCreateModelResponse(KaggleObject):
   r"""
@@ -648,6 +678,10 @@ class ApiCreateModelResponse(KaggleObject):
       raise TypeError('url must be of type str')
     self._url = url
 
+  @property
+  def errorCode(self):
+    return self.error_code
+
 
 class ApiDeleteModelInstanceRequest(KaggleObject):
   r"""
@@ -717,7 +751,6 @@ class ApiDeleteModelInstanceRequest(KaggleObject):
       raise TypeError('instance_slug must be of type str')
     self._instance_slug = instance_slug
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/delete'
     return path.format_map(self.to_field_map(self))
@@ -726,6 +759,7 @@ class ApiDeleteModelInstanceRequest(KaggleObject):
   @staticmethod
   def method():
     return 'POST'
+
 
 class ApiDeleteModelInstanceVersionRequest(KaggleObject):
   r"""
@@ -810,7 +844,6 @@ class ApiDeleteModelInstanceVersionRequest(KaggleObject):
       raise TypeError('version_number must be of type int')
     self._version_number = version_number
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/{version_number}/delete'
     return path.format_map(self.to_field_map(self))
@@ -819,6 +852,7 @@ class ApiDeleteModelInstanceVersionRequest(KaggleObject):
   @staticmethod
   def method():
     return 'POST'
+
 
 class ApiDeleteModelRequest(KaggleObject):
   r"""
@@ -858,7 +892,6 @@ class ApiDeleteModelRequest(KaggleObject):
       raise TypeError('model_slug must be of type str')
     self._model_slug = model_slug
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/delete'
     return path.format_map(self.to_field_map(self))
@@ -867,6 +900,7 @@ class ApiDeleteModelRequest(KaggleObject):
   @staticmethod
   def method():
     return 'POST'
+
 
 class ApiDeleteModelResponse(KaggleObject):
   r"""
@@ -992,7 +1026,6 @@ class ApiDownloadModelInstanceVersionRequest(KaggleObject):
       raise TypeError('path must be of type str')
     self._path = path
 
-
   def endpoint(self):
     if self.path:
       path = '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/{version_number}/download/{path}'
@@ -1003,6 +1036,7 @@ class ApiDownloadModelInstanceVersionRequest(KaggleObject):
   @staticmethod
   def endpoint_path():
     return '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/{version_number}/download'
+
 
 class ApiGetModelInstanceRequest(KaggleObject):
   r"""
@@ -1072,7 +1106,6 @@ class ApiGetModelInstanceRequest(KaggleObject):
       raise TypeError('instance_slug must be of type str')
     self._instance_slug = instance_slug
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/get'
     return path.format_map(self.to_field_map(self))
@@ -1080,6 +1113,7 @@ class ApiGetModelInstanceRequest(KaggleObject):
   @staticmethod
   def endpoint_path():
     return '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/get'
+
 
 class ApiGetModelRequest(KaggleObject):
   r"""
@@ -1119,7 +1153,6 @@ class ApiGetModelRequest(KaggleObject):
       raise TypeError('model_slug must be of type str')
     self._model_slug = model_slug
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/get'
     return path.format_map(self.to_field_map(self))
@@ -1127,6 +1160,186 @@ class ApiGetModelRequest(KaggleObject):
   @staticmethod
   def endpoint_path():
     return '/api/v1/models/{owner_slug}/{model_slug}/get'
+
+
+class ApiListModelGatingUserConsentsRequest(KaggleObject):
+  r"""
+  Attributes:
+    owner_slug (str)
+    model_slug (str)
+    review_status (GatingAgreementRequestsReviewStatus)
+      filters: a null value means the filter is off.
+    is_user_request_data_expired (bool)
+    page_size (int)
+      paging
+    page_token (str)
+  """
+
+  def __init__(self):
+    self._owner_slug = ""
+    self._model_slug = ""
+    self._review_status = None
+    self._is_user_request_data_expired = None
+    self._page_size = None
+    self._page_token = None
+    self._freeze()
+
+  @property
+  def owner_slug(self) -> str:
+    return self._owner_slug
+
+  @owner_slug.setter
+  def owner_slug(self, owner_slug: str):
+    if owner_slug is None:
+      del self.owner_slug
+      return
+    if not isinstance(owner_slug, str):
+      raise TypeError('owner_slug must be of type str')
+    self._owner_slug = owner_slug
+
+  @property
+  def model_slug(self) -> str:
+    return self._model_slug
+
+  @model_slug.setter
+  def model_slug(self, model_slug: str):
+    if model_slug is None:
+      del self.model_slug
+      return
+    if not isinstance(model_slug, str):
+      raise TypeError('model_slug must be of type str')
+    self._model_slug = model_slug
+
+  @property
+  def review_status(self) -> 'GatingAgreementRequestsReviewStatus':
+    """filters: a null value means the filter is off."""
+    return self._review_status or GatingAgreementRequestsReviewStatus.GATING_AGREEMENT_REQUESTS_REVIEW_STATUS_UNSPECIFIED
+
+  @review_status.setter
+  def review_status(self, review_status: 'GatingAgreementRequestsReviewStatus'):
+    if review_status is None:
+      del self.review_status
+      return
+    if not isinstance(review_status, GatingAgreementRequestsReviewStatus):
+      raise TypeError('review_status must be of type GatingAgreementRequestsReviewStatus')
+    self._review_status = review_status
+
+  @property
+  def is_user_request_data_expired(self) -> bool:
+    return self._is_user_request_data_expired or False
+
+  @is_user_request_data_expired.setter
+  def is_user_request_data_expired(self, is_user_request_data_expired: bool):
+    if is_user_request_data_expired is None:
+      del self.is_user_request_data_expired
+      return
+    if not isinstance(is_user_request_data_expired, bool):
+      raise TypeError('is_user_request_data_expired must be of type bool')
+    self._is_user_request_data_expired = is_user_request_data_expired
+
+  @property
+  def page_size(self) -> int:
+    """paging"""
+    return self._page_size or 0
+
+  @page_size.setter
+  def page_size(self, page_size: int):
+    if page_size is None:
+      del self.page_size
+      return
+    if not isinstance(page_size, int):
+      raise TypeError('page_size must be of type int')
+    self._page_size = page_size
+
+  @property
+  def page_token(self) -> str:
+    return self._page_token or ""
+
+  @page_token.setter
+  def page_token(self, page_token: str):
+    if page_token is None:
+      del self.page_token
+      return
+    if not isinstance(page_token, str):
+      raise TypeError('page_token must be of type str')
+    self._page_token = page_token
+
+  def endpoint(self):
+    path = '/api/v1/models/{owner_slug}/{model_slug}/user-consents'
+    return path.format_map(self.to_field_map(self))
+
+  @staticmethod
+  def endpoint_path():
+    return '/api/v1/models/{owner_slug}/{model_slug}/user-consents'
+
+
+class ApiListModelGatingUserConsentsResponse(KaggleObject):
+  r"""
+  Attributes:
+    gating_user_consents (ApiGatingUserConsent)
+    total_size (int)
+    next_page_token (str)
+  """
+
+  def __init__(self):
+    self._gating_user_consents = []
+    self._total_size = 0
+    self._next_page_token = ""
+    self._freeze()
+
+  @property
+  def gating_user_consents(self) -> Optional[List[Optional['ApiGatingUserConsent']]]:
+    return self._gating_user_consents
+
+  @gating_user_consents.setter
+  def gating_user_consents(self, gating_user_consents: Optional[List[Optional['ApiGatingUserConsent']]]):
+    if gating_user_consents is None:
+      del self.gating_user_consents
+      return
+    if not isinstance(gating_user_consents, list):
+      raise TypeError('gating_user_consents must be of type list')
+    if not all([isinstance(t, ApiGatingUserConsent) for t in gating_user_consents]):
+      raise TypeError('gating_user_consents must contain only items of type ApiGatingUserConsent')
+    self._gating_user_consents = gating_user_consents
+
+  @property
+  def total_size(self) -> int:
+    return self._total_size
+
+  @total_size.setter
+  def total_size(self, total_size: int):
+    if total_size is None:
+      del self.total_size
+      return
+    if not isinstance(total_size, int):
+      raise TypeError('total_size must be of type int')
+    self._total_size = total_size
+
+  @property
+  def next_page_token(self) -> str:
+    return self._next_page_token
+
+  @next_page_token.setter
+  def next_page_token(self, next_page_token: str):
+    if next_page_token is None:
+      del self.next_page_token
+      return
+    if not isinstance(next_page_token, str):
+      raise TypeError('next_page_token must be of type str')
+    self._next_page_token = next_page_token
+
+  @property
+  def gatingUserConsents(self):
+    return self.gating_user_consents
+
+  @property
+  def totalSize(self):
+    return self.total_size
+
+  @property
+  def nextPageToken(self):
+    return self.next_page_token
+
 
 class ApiListModelInstanceVersionFilesRequest(KaggleObject):
   r"""
@@ -1241,7 +1454,6 @@ class ApiListModelInstanceVersionFilesRequest(KaggleObject):
       raise TypeError('page_token must be of type str')
     self._page_token = page_token
 
-
   def endpoint(self):
     if self.version_number:
       path = '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/{version_number}/files'
@@ -1252,6 +1464,7 @@ class ApiListModelInstanceVersionFilesRequest(KaggleObject):
   @staticmethod
   def endpoint_path():
     return '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/files'
+
 
 class ApiListModelInstanceVersionFilesResponse(KaggleObject):
   r"""
@@ -1292,6 +1505,10 @@ class ApiListModelInstanceVersionFilesResponse(KaggleObject):
     if not isinstance(next_page_token, str):
       raise TypeError('next_page_token must be of type str')
     self._next_page_token = next_page_token
+
+  @property
+  def nextPageToken(self):
+    return self.next_page_token
 
 
 class ApiListModelsRequest(KaggleObject):
@@ -1408,10 +1625,10 @@ class ApiListModelsRequest(KaggleObject):
       raise TypeError('only_vertex_models must be of type bool')
     self._only_vertex_models = only_vertex_models
 
-
   def endpoint(self):
     path = '/api/v1/models/list'
     return path.format_map(self.to_field_map(self))
+
 
 class ApiListModelsResponse(KaggleObject):
   r"""
@@ -1467,6 +1684,14 @@ class ApiListModelsResponse(KaggleObject):
     if not isinstance(total_results, int):
       raise TypeError('total_results must be of type int')
     self._total_results = total_results
+
+  @property
+  def nextPageToken(self):
+    return self.next_page_token
+
+  @property
+  def totalResults(self):
+    return self.total_results
 
 
 class ApiModel(KaggleObject):
@@ -1768,6 +1993,7 @@ class ApiModelInstance(KaggleObject):
     model_instance_type (ModelInstanceType)
     base_model_instance_information (BaseModelInstanceInformation)
     external_base_model_url (str)
+    total_uncompressed_bytes (int)
   """
 
   def __init__(self):
@@ -1786,6 +2012,7 @@ class ApiModelInstance(KaggleObject):
     self._model_instance_type = ModelInstanceType.MODEL_INSTANCE_TYPE_UNSPECIFIED
     self._base_model_instance_information = None
     self._external_base_model_url = ""
+    self._total_uncompressed_bytes = 0
     self._freeze()
 
   @property
@@ -1984,6 +2211,101 @@ class ApiModelInstance(KaggleObject):
     if not isinstance(external_base_model_url, str):
       raise TypeError('external_base_model_url must be of type str')
     self._external_base_model_url = external_base_model_url
+
+  @property
+  def total_uncompressed_bytes(self) -> int:
+    return self._total_uncompressed_bytes
+
+  @total_uncompressed_bytes.setter
+  def total_uncompressed_bytes(self, total_uncompressed_bytes: int):
+    if total_uncompressed_bytes is None:
+      del self.total_uncompressed_bytes
+      return
+    if not isinstance(total_uncompressed_bytes, int):
+      raise TypeError('total_uncompressed_bytes must be of type int')
+    self._total_uncompressed_bytes = total_uncompressed_bytes
+
+
+class ApiReviewGatingUserConsentRequest(KaggleObject):
+  r"""
+  Attributes:
+    agreement_id (int)
+    user_name (str)
+    review_status (GatingAgreementRequestsReviewStatus)
+    publisher_notes (str)
+  """
+
+  def __init__(self):
+    self._agreement_id = 0
+    self._user_name = ""
+    self._review_status = GatingAgreementRequestsReviewStatus.GATING_AGREEMENT_REQUESTS_REVIEW_STATUS_UNSPECIFIED
+    self._publisher_notes = None
+    self._freeze()
+
+  @property
+  def agreement_id(self) -> int:
+    return self._agreement_id
+
+  @agreement_id.setter
+  def agreement_id(self, agreement_id: int):
+    if agreement_id is None:
+      del self.agreement_id
+      return
+    if not isinstance(agreement_id, int):
+      raise TypeError('agreement_id must be of type int')
+    self._agreement_id = agreement_id
+
+  @property
+  def user_name(self) -> str:
+    return self._user_name
+
+  @user_name.setter
+  def user_name(self, user_name: str):
+    if user_name is None:
+      del self.user_name
+      return
+    if not isinstance(user_name, str):
+      raise TypeError('user_name must be of type str')
+    self._user_name = user_name
+
+  @property
+  def review_status(self) -> 'GatingAgreementRequestsReviewStatus':
+    return self._review_status
+
+  @review_status.setter
+  def review_status(self, review_status: 'GatingAgreementRequestsReviewStatus'):
+    if review_status is None:
+      del self.review_status
+      return
+    if not isinstance(review_status, GatingAgreementRequestsReviewStatus):
+      raise TypeError('review_status must be of type GatingAgreementRequestsReviewStatus')
+    self._review_status = review_status
+
+  @property
+  def publisher_notes(self) -> str:
+    return self._publisher_notes or ""
+
+  @publisher_notes.setter
+  def publisher_notes(self, publisher_notes: str):
+    if publisher_notes is None:
+      del self.publisher_notes
+      return
+    if not isinstance(publisher_notes, str):
+      raise TypeError('publisher_notes must be of type str')
+    self._publisher_notes = publisher_notes
+
+  def endpoint(self):
+    path = '/api/v1/gating/{agreement_id}/user-consent/review'
+    return path.format_map(self.to_field_map(self))
+
+
+  @staticmethod
+  def method():
+    return 'POST'
+
+  @staticmethod
+  def body_fields():
+    return '*'
 
 
 class ApiUpdateModelInstanceRequest(KaggleObject):
@@ -2191,7 +2513,6 @@ class ApiUpdateModelInstanceRequest(KaggleObject):
       raise TypeError('external_base_model_url must be of type str')
     self._external_base_model_url = external_base_model_url
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/{framework}/{instance_slug}/update'
     return path.format_map(self.to_field_map(self))
@@ -2204,6 +2525,7 @@ class ApiUpdateModelInstanceRequest(KaggleObject):
   @staticmethod
   def body_fields():
     return '*'
+
 
 class ApiUpdateModelRequest(KaggleObject):
   r"""
@@ -2348,7 +2670,6 @@ class ApiUpdateModelRequest(KaggleObject):
       raise TypeError('update_mask must be of type FieldMask')
     self._update_mask = update_mask
 
-
   def endpoint(self):
     path = '/api/v1/models/{owner_slug}/{model_slug}/update'
     return path.format_map(self.to_field_map(self))
@@ -2361,6 +2682,7 @@ class ApiUpdateModelRequest(KaggleObject):
   @staticmethod
   def body_fields():
     return '*'
+
 
 class ApiUpdateModelResponse(KaggleObject):
   r"""
@@ -2484,7 +2806,6 @@ class ApiUploadModelFileRequest(KaggleObject):
       raise TypeError('last_modified_epoch_seconds must be of type int')
     self._last_modified_epoch_seconds = last_modified_epoch_seconds
 
-
   def endpoint(self):
     path = '/api/v1/models/upload/file/{content_length}/{last_modified_epoch_seconds}'
     return path.format_map(self.to_field_map(self))
@@ -2493,6 +2814,7 @@ class ApiUploadModelFileRequest(KaggleObject):
   @staticmethod
   def method():
     return 'POST'
+
 
 class ApiUploadModelFileResponse(KaggleObject):
   r"""
@@ -2536,6 +2858,10 @@ class ApiUploadModelFileResponse(KaggleObject):
       raise TypeError('create_url must be of type str')
     self._create_url = create_url
 
+  @property
+  def createUrl(self):
+    return self.create_url
+
 
 class CreateModelSigningTokenRequest(KaggleObject):
   r"""
@@ -2575,7 +2901,6 @@ class CreateModelSigningTokenRequest(KaggleObject):
       raise TypeError('model_slug must be of type str')
     self._model_slug = model_slug
 
-
   def endpoint(self):
     path = '/api/v1/models/signing/token'
     return path.format_map(self.to_field_map(self))
@@ -2588,6 +2913,7 @@ class CreateModelSigningTokenRequest(KaggleObject):
   @staticmethod
   def body_fields():
     return '*'
+
 
 class CreateModelSigningTokenResponse(KaggleObject):
   r"""
@@ -2612,16 +2938,20 @@ class CreateModelSigningTokenResponse(KaggleObject):
       raise TypeError('id_token must be of type str')
     self._id_token = id_token
 
+  @property
+  def idToken(self):
+    return self.id_token
+
 
 class KeysRequest(KaggleObject):
   r"""
   """
 
   pass
-
   def endpoint(self):
     path = '/api/v1/models/signing/keys'
     return path.format_map(self.to_field_map(self))
+
 
 class KeysResponse(KaggleObject):
   r"""
@@ -2658,10 +2988,10 @@ class WellKnowEndpointRequest(KaggleObject):
   """
 
   pass
-
   def endpoint(self):
     path = '/api/v1/models/signing/.well-known/openid-configuration'
     return path.format_map(self.to_field_map(self))
+
 
 class WellKnowEndpointResponse(KaggleObject):
   r"""
@@ -2791,6 +3121,192 @@ class WellKnowEndpointResponse(KaggleObject):
       raise TypeError('subject_types_supported must contain only items of type str')
     self._subject_types_supported = subject_types_supported
 
+  @property
+  def jwksUri(self):
+    return self.jwks_uri
+
+  @property
+  def tokenEndpoint(self):
+    return self.token_endpoint
+
+  @property
+  def idTokenSigningAlgValuesSupported(self):
+    return self.id_token_signing_alg_values_supported
+
+  @property
+  def claimsSupported(self):
+    return self.claims_supported
+
+  @property
+  def responseTypesSupported(self):
+    return self.response_types_supported
+
+  @property
+  def subjectTypesSupported(self):
+    return self.subject_types_supported
+
+
+class ApiGatingUserConsent(KaggleObject):
+  r"""
+  ApiGatingUserConsent presents GatingUserConsent data for publisher access,
+  omitting or modifying certain fields as needed such as user_id.
+
+  Attributes:
+    id (int)
+    agreement_id (int)
+    user_name (str)
+    request_data (str)
+    request_time (datetime)
+    review_time (datetime)
+    review_status (GatingAgreementRequestsReviewStatus)
+    expiry_status (GatingAgreementRequestsExpiryStatus)
+    expiry_time (datetime)
+    publisher_notes (str)
+  """
+
+  def __init__(self):
+    self._id = 0
+    self._agreement_id = 0
+    self._user_name = ""
+    self._request_data = None
+    self._request_time = None
+    self._review_time = None
+    self._review_status = GatingAgreementRequestsReviewStatus.GATING_AGREEMENT_REQUESTS_REVIEW_STATUS_UNSPECIFIED
+    self._expiry_status = GatingAgreementRequestsExpiryStatus.GATING_AGREEMENT_REQUESTS_EXPIRY_STATUS_UNSPECIFIED
+    self._expiry_time = None
+    self._publisher_notes = None
+    self._freeze()
+
+  @property
+  def id(self) -> int:
+    return self._id
+
+  @id.setter
+  def id(self, id: int):
+    if id is None:
+      del self.id
+      return
+    if not isinstance(id, int):
+      raise TypeError('id must be of type int')
+    self._id = id
+
+  @property
+  def agreement_id(self) -> int:
+    return self._agreement_id
+
+  @agreement_id.setter
+  def agreement_id(self, agreement_id: int):
+    if agreement_id is None:
+      del self.agreement_id
+      return
+    if not isinstance(agreement_id, int):
+      raise TypeError('agreement_id must be of type int')
+    self._agreement_id = agreement_id
+
+  @property
+  def user_name(self) -> str:
+    return self._user_name
+
+  @user_name.setter
+  def user_name(self, user_name: str):
+    if user_name is None:
+      del self.user_name
+      return
+    if not isinstance(user_name, str):
+      raise TypeError('user_name must be of type str')
+    self._user_name = user_name
+
+  @property
+  def request_data(self) -> str:
+    return self._request_data or ""
+
+  @request_data.setter
+  def request_data(self, request_data: str):
+    if request_data is None:
+      del self.request_data
+      return
+    if not isinstance(request_data, str):
+      raise TypeError('request_data must be of type str')
+    self._request_data = request_data
+
+  @property
+  def request_time(self) -> datetime:
+    return self._request_time
+
+  @request_time.setter
+  def request_time(self, request_time: datetime):
+    if request_time is None:
+      del self.request_time
+      return
+    if not isinstance(request_time, datetime):
+      raise TypeError('request_time must be of type datetime')
+    self._request_time = request_time
+
+  @property
+  def review_time(self) -> datetime:
+    return self._review_time or None
+
+  @review_time.setter
+  def review_time(self, review_time: datetime):
+    if review_time is None:
+      del self.review_time
+      return
+    if not isinstance(review_time, datetime):
+      raise TypeError('review_time must be of type datetime')
+    self._review_time = review_time
+
+  @property
+  def review_status(self) -> 'GatingAgreementRequestsReviewStatus':
+    return self._review_status
+
+  @review_status.setter
+  def review_status(self, review_status: 'GatingAgreementRequestsReviewStatus'):
+    if review_status is None:
+      del self.review_status
+      return
+    if not isinstance(review_status, GatingAgreementRequestsReviewStatus):
+      raise TypeError('review_status must be of type GatingAgreementRequestsReviewStatus')
+    self._review_status = review_status
+
+  @property
+  def expiry_status(self) -> 'GatingAgreementRequestsExpiryStatus':
+    return self._expiry_status
+
+  @expiry_status.setter
+  def expiry_status(self, expiry_status: 'GatingAgreementRequestsExpiryStatus'):
+    if expiry_status is None:
+      del self.expiry_status
+      return
+    if not isinstance(expiry_status, GatingAgreementRequestsExpiryStatus):
+      raise TypeError('expiry_status must be of type GatingAgreementRequestsExpiryStatus')
+    self._expiry_status = expiry_status
+
+  @property
+  def expiry_time(self) -> datetime:
+    return self._expiry_time or None
+
+  @expiry_time.setter
+  def expiry_time(self, expiry_time: datetime):
+    if expiry_time is None:
+      del self.expiry_time
+      return
+    if not isinstance(expiry_time, datetime):
+      raise TypeError('expiry_time must be of type datetime')
+    self._expiry_time = expiry_time
+
+  @property
+  def publisher_notes(self) -> str:
+    return self._publisher_notes or ""
+
+  @publisher_notes.setter
+  def publisher_notes(self, publisher_notes: str):
+    if publisher_notes is None:
+      del self.publisher_notes
+      return
+    if not isinstance(publisher_notes, str):
+      raise TypeError('publisher_notes must be of type str')
+    self._publisher_notes = publisher_notes
+
 
 class JWK(KaggleObject):
   r"""
@@ -2914,6 +3430,7 @@ ApiCreateModelInstanceRequestBody._fields = [
   FieldMetadata("modelInstanceType", "model_instance_type", "_model_instance_type", ModelInstanceType, None, EnumSerializer(), optional=True),
   FieldMetadata("baseModelInstance", "base_model_instance", "_base_model_instance", str, None, PredefinedSerializer(), optional=True),
   FieldMetadata("externalBaseModelUrl", "external_base_model_url", "_external_base_model_url", str, None, PredefinedSerializer(), optional=True),
+  FieldMetadata("sigstore", "sigstore", "_sigstore", bool, None, PredefinedSerializer(), optional=True),
 ]
 
 ApiCreateModelInstanceVersionRequest._fields = [
@@ -2928,6 +3445,7 @@ ApiCreateModelInstanceVersionRequestBody._fields = [
   FieldMetadata("versionNotes", "version_notes", "_version_notes", str, None, PredefinedSerializer(), optional=True),
   FieldMetadata("files", "files", "_files", ApiDatasetNewFile, [], ListSerializer(KaggleObjectSerializer())),
   FieldMetadata("directories", "directories", "_directories", ApiUploadDirectoryInfo, [], ListSerializer(KaggleObjectSerializer())),
+  FieldMetadata("sigstore", "sigstore", "_sigstore", bool, None, PredefinedSerializer(), optional=True),
 ]
 
 ApiCreateModelRequest._fields = [
@@ -2992,6 +3510,21 @@ ApiGetModelInstanceRequest._fields = [
 ApiGetModelRequest._fields = [
   FieldMetadata("ownerSlug", "owner_slug", "_owner_slug", str, "", PredefinedSerializer()),
   FieldMetadata("modelSlug", "model_slug", "_model_slug", str, "", PredefinedSerializer()),
+]
+
+ApiListModelGatingUserConsentsRequest._fields = [
+  FieldMetadata("ownerSlug", "owner_slug", "_owner_slug", str, "", PredefinedSerializer()),
+  FieldMetadata("modelSlug", "model_slug", "_model_slug", str, "", PredefinedSerializer()),
+  FieldMetadata("reviewStatus", "review_status", "_review_status", GatingAgreementRequestsReviewStatus, None, EnumSerializer(), optional=True),
+  FieldMetadata("isUserRequestDataExpired", "is_user_request_data_expired", "_is_user_request_data_expired", bool, None, PredefinedSerializer(), optional=True),
+  FieldMetadata("pageSize", "page_size", "_page_size", int, None, PredefinedSerializer(), optional=True),
+  FieldMetadata("pageToken", "page_token", "_page_token", str, None, PredefinedSerializer(), optional=True),
+]
+
+ApiListModelGatingUserConsentsResponse._fields = [
+  FieldMetadata("gatingUserConsents", "gating_user_consents", "_gating_user_consents", ApiGatingUserConsent, [], ListSerializer(KaggleObjectSerializer())),
+  FieldMetadata("totalSize", "total_size", "_total_size", int, 0, PredefinedSerializer()),
+  FieldMetadata("nextPageToken", "next_page_token", "_next_page_token", str, "", PredefinedSerializer()),
 ]
 
 ApiListModelInstanceVersionFilesRequest._fields = [
@@ -3063,6 +3596,14 @@ ApiModelInstance._fields = [
   FieldMetadata("modelInstanceType", "model_instance_type", "_model_instance_type", ModelInstanceType, ModelInstanceType.MODEL_INSTANCE_TYPE_UNSPECIFIED, EnumSerializer()),
   FieldMetadata("baseModelInstanceInformation", "base_model_instance_information", "_base_model_instance_information", BaseModelInstanceInformation, None, KaggleObjectSerializer(), optional=True),
   FieldMetadata("externalBaseModelUrl", "external_base_model_url", "_external_base_model_url", str, "", PredefinedSerializer()),
+  FieldMetadata("totalUncompressedBytes", "total_uncompressed_bytes", "_total_uncompressed_bytes", int, 0, PredefinedSerializer()),
+]
+
+ApiReviewGatingUserConsentRequest._fields = [
+  FieldMetadata("agreementId", "agreement_id", "_agreement_id", int, 0, PredefinedSerializer()),
+  FieldMetadata("userName", "user_name", "_user_name", str, "", PredefinedSerializer()),
+  FieldMetadata("reviewStatus", "review_status", "_review_status", GatingAgreementRequestsReviewStatus, GatingAgreementRequestsReviewStatus.GATING_AGREEMENT_REQUESTS_REVIEW_STATUS_UNSPECIFIED, EnumSerializer()),
+  FieldMetadata("publisherNotes", "publisher_notes", "_publisher_notes", str, None, PredefinedSerializer(), optional=True),
 ]
 
 ApiUpdateModelInstanceRequest._fields = [
@@ -3136,6 +3677,19 @@ WellKnowEndpointResponse._fields = [
   FieldMetadata("claims_supported", "claims_supported", "_claims_supported", str, [], ListSerializer(PredefinedSerializer())),
   FieldMetadata("response_types_supported", "response_types_supported", "_response_types_supported", str, [], ListSerializer(PredefinedSerializer())),
   FieldMetadata("subject_types_supported", "subject_types_supported", "_subject_types_supported", str, [], ListSerializer(PredefinedSerializer())),
+]
+
+ApiGatingUserConsent._fields = [
+  FieldMetadata("id", "id", "_id", int, 0, PredefinedSerializer()),
+  FieldMetadata("agreementId", "agreement_id", "_agreement_id", int, 0, PredefinedSerializer()),
+  FieldMetadata("userName", "user_name", "_user_name", str, "", PredefinedSerializer()),
+  FieldMetadata("requestData", "request_data", "_request_data", str, None, PredefinedSerializer(), optional=True),
+  FieldMetadata("requestTime", "request_time", "_request_time", datetime, None, DateTimeSerializer()),
+  FieldMetadata("reviewTime", "review_time", "_review_time", datetime, None, DateTimeSerializer(), optional=True),
+  FieldMetadata("reviewStatus", "review_status", "_review_status", GatingAgreementRequestsReviewStatus, GatingAgreementRequestsReviewStatus.GATING_AGREEMENT_REQUESTS_REVIEW_STATUS_UNSPECIFIED, EnumSerializer()),
+  FieldMetadata("expiryStatus", "expiry_status", "_expiry_status", GatingAgreementRequestsExpiryStatus, GatingAgreementRequestsExpiryStatus.GATING_AGREEMENT_REQUESTS_EXPIRY_STATUS_UNSPECIFIED, EnumSerializer()),
+  FieldMetadata("expiryTime", "expiry_time", "_expiry_time", datetime, None, DateTimeSerializer(), optional=True),
+  FieldMetadata("publisherNotes", "publisher_notes", "_publisher_notes", str, None, PredefinedSerializer(), optional=True),
 ]
 
 JWK._fields = [
